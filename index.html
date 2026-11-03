@@ -5,112 +5,316 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Central de Apuestas</title>
     <style>
-        body{font-family:Arial,sans-serif;background-color:#0d1b2a;color:white;padding:15px;margin:0;}
-        .header-app{background-color:#1b263b;padding:15px;text-align:center;border-radius:8px;margin-bottom:20px;}
-        .balance-destacado{font-size:1.5rem;color:#00b4d8;font-weight:bold;}
-        .liga-contenedor{background:#1b263b;margin-bottom:15px;padding:10px;border-radius:8px;}
-        .partido-card{background:#415a77;padding:10px;margin:8px 0;border-radius:5px;display:flex;justify-content:space-between;align-items:center;}
-        .en-vivo{color:#ff4d4d;font-weight:bold;}
-        .cuotas-box button{background:#e0e1dd;color:black;border:none;padding:5px 10px;margin:0 2px;cursor:pointer;border-radius:3px;}
+        :root {
+            --bg-main: #0d1b2a;
+            --bg-card: #1b263b;
+            --accent: #52b788;
+            --text: #e0e1dd;
+            --input-bg: #415a77;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .contenedor {
+            width: 100%;
+            max-width: 450px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .header-app { text-align: center; margin-bottom: 25px; }
+        .header-app h2 { margin: 0 0 10px 0; font-size: 1.4rem; }
+        .balance-box {
+            font-size: 1.8rem;
+            color: var(--accent);
+            font-weight: bold;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .campo-grupo { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #00b4d8;
+            background: var(--input-bg);
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .cuotas-info {
+            background: rgba(0,0,0,0.15);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-around;
+            border-left: 4px solid #00b4d8;
+        }
+        .btn-apostar {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #0d1b2a;
+            border: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-apostar:hover { background: #74c69d; }
+        
+        .seccion-planes {
+            width: 100%;
+            max-width: 450px;
+            background: #14213d;
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .seccion-planes h3 { margin-top: 0; text-align: center; color: #00b4d8; }
+        .grid-planes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .tarjeta-plan {
+            background: #1c2a4a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tarjeta-plan h4 { margin: 0 0 5px 0; font-size: 1rem; color: #fff; }
+        .tarjeta-plan .precio { font-size: 1.1rem; color: var(--accent); font-weight: bold; margin-bottom: 10px; }
+        .btn-plan {
+            width: 100%;
+            padding: 8px;
+            background: #00b4d8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-plan:hover { background: #0096c7; }
+
+        .historial {
+            margin-top: 25px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .log-item {
+            font-size: 0.85rem;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+        }
+        .log-hora { color: #8d99ae; }
     </style>
 </head>
 <body>
-<div class="header-app">
-    <h2>🏆 Central de Apuestas</h2>
-    <div class="balance-destacado" id="balance-pantalla">$50.000 COP</div>
+
+<div class="contenedor">
+    <div class="header-app">
+        <h2>🏆 Central de Apuestas</h2>
+        <div class="balance-box" id="balance-pantalla">$50.000 COP</div>
+    </div>
+
+    <div class="campo-grupo">
+        <label>Selecciona una Liga:</label>
+        <select id="selector-liga" onchange="actualizarEquipos()"></select>
+    </div>
+
+    <div class="campo-grupo">
+        <label>Selecciona tu Equipo:</label>
+        <select id="selector-equipo" onchange="mostrarCuotasDinamicas()"></select>
+    </div>
+
+    <div class="cuotas-info" id="panel-cuotas">
+        <span>L: --</span> | <span>E: --</span> | <span>V: --</span>
+    </div>
+
+    <div class="campo-grupo">
+        <label>Monto a Apostar ($ COP):</label>
+        <input type="number" id="monto-apuesta" value="5000" min="1000" step="1000">
+    </div>
+
+    <button class="btn-apostar" onclick="colocarApuesta()">Colocar Apuesta</button>
+
+    <div class="historial">
+        <div id="lista-logs"></div>
+    </div>
 </div>
-<div id="contenedor-partidos"></div>
+
+<div class="seccion-planes">
+    <h3>💎 Planes de Recarga</h3>
+    <div class="grid-planes">
+        <div class="tarjeta-plan">
+            <h4>Plan Básico</h4>
+            <div class="precio">$20.000 COP</div>
+            <button class="btn-plan" onclick="comprarPlan(20000, 'Básico')">Recargar</button>
+        </div>
+        <div class="tarjeta-plan">
+            <h4>Plan Estándar</h4>
+            <div class="precio">$50.000 COP</div>
+            <button class="btn-plan" onclick="comprarPlan(50000, 'Estándar')">Recargar</button>
+        </div>
+        <div class="tarjeta-plan">
+            <h4>Plan Premium</h4>
+            <div class="precio">$100.000 COP</div>
+            <button class="btn-plan" onclick="comprarPlan(100000, 'Premium')">Recargar</button>
+        </div>
+        <div class="tarjeta-plan">
+            <h4>Plan VIP</h4>
+            <div class="precio">$200.000 COP</div>
+            <button class="btn-plan" onclick="comprarPlan(200000, 'VIP')">Recargar</button>
+        </div>
+    </div>
+</div>
+
 <script>
+// VARIABLES GLOBALES Y CONTROL DE LOGS
 let balance = parseFloat(localStorage.getItem('bet_balance')) || 50000;
-let logsSistema = JSON.parse(localStorage.getItem('bet_logs')) || [{mensaje:'Bono inicial de 50.000 créditos otorgado.',hora:'Inicio'}];
-const opcionesFecha = {day:'2-digit',month:'2-digit',year:'numeric'};
-const hoyObj = new Date();
-const fechaHoy = hoyObj.toLocaleDateString('es-CO',opcionesFecha);
+let logsSistema = JSON.parse(localStorage.getItem('bet_logs')) || [
+    { mensaje: 'Bono inicial de 50.000 créditos otorgado.', hora: 'Inicio' }
+];
+
+// BASE DE DATOS DE EQUIPOS COMPLETA (9 LIGAS)
 const equiposLigas = {
-    "LA_LIGA_ESPANA":["Real Madrid","Barcelona","Atlético de Madrid","Real Sociedad","Villarreal","Sevilla","Athletic Club","Real Betis"],
-    "SERIE_A_ITALIA":["Inter de Milán","Napoli","AC Milan","Juventus","AS Roma","Atalanta","Lazio","Fiorentina"],
-    "PREMIER_LEAGUE":["Liverpool","Manchester City","Arsenal","Chelsea","Tottenham","Aston Villa","Manchester United","Newcastle"],
-    "BUNDESLIGA_ALEMANIA":["Bayern Múnich","Borussia Dortmund","Bayer Leverkusen","RB Leipzig","Einfacht Frankfurt","Stuttgart"],
-    "LIGA_BETPLAY_COLOMBIA":["Millonarios","Santa Fe","Junior","Atlético Nacional","América de Cali","Deportivo Cali","Medellín","Tolima"],
-    "LIGA_ARGENTINA":["Boca Juniors","River Plate","Racing Club","Independiente","San Lorenzo","Vélez Sarsfield","Estudiantes","Talleres"],
-    "BRASILERAO_BRASIL":["Flamengo","Palmeiras","Botafogo","São Paulo","Fluminense","Atlético Mineiro","Grêmio","Internacional"],
-    "CHAMPIONS_LEAGUE":["Real Madrid","Manchester City","Bayern Múnich","PSG","Arsenal","Inter de Milán","Barcelona","Bayer Leverkusen"],
-    "EUROPA_LEAGUE":["Manchester United","Tottenham","Roma","Porto","Ajax","Real Sociedad","Athletic Club","Eintracht Frankfurt"]
+    "LA_LIGA_ESPANA": ["Real Madrid", "Barcelona", "Atlético de Madrid", "Real Sociedad", "Villarreal", "Sevilla", "Athletic Club", "Real Betis"],
+    "SERIE_A_ITALIA": ["Inter de Milán", "Napoli", "AC Milan", "Juventus", "AS Roma", "Atalanta", "Lazio", "Fiorentina"],
+    "PREMIER_LEAGUE": ["Liverpool", "Manchester City", "Arsenal", "Chelsea", "Tottenham", "Aston Villa", "Manchester United", "Newcastle"],
+    "BUNDESLIGA_ALEMANIA": ["Bayern Múnich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig", "Einfacht Frankfurt", "Stuttgart"],
+    "LIGA_BETPLAY_COLOMBIA": ["Millonarios", "Santa Fe", "Junior", "Atlético Nacional", "América de Cali", "Deportivo Cali", "Medellín", "Tolima"],
+    "LIGA_ARGENTINA": ["Boca Juniors", "River Plate", "Racing Club", "Independiente", "San Lorenzo", "Vélez Sarsfield", "Estudiantes", "Talleres"],
+    "BRASILERAO_BRASIL": ["Flamengo", "Palmeiras", "Botafogo", "São Paulo", "Fluminense", "Atlético Mineiro", "Grêmio", "Internacional"],
+    "CHAMPIONS_LEAGUE": ["Real Madrid", "Manchester City", "Bayern Múnich", "PSG", "Arsenal", "Inter de Milán", "Barcelona", "Bayer Leverkusen"],
+    "EUROPA_LEAGUE": ["Manchester United", "Tottenham", "Roma", "Porto", "Ajax", "Real Sociedad", "Athletic Club", "Eintracht Frankfurt"]
 };
-function randomConSemilla(semilla){let x=Math.sin(semilla)*10000;return x-Math.floor(x);}
-function generarPartidosNuevos(){
-    let partidosHoy=[];let contadorSemilla=hoyObj.getDate()+hoyObj.getMonth()+hoyObj.getFullYear();
-    for(const liga in equiposLigas){
-        const equipos=equiposLigas[liga];
-        for(let i=0;i<equipos.length;i+=2){
-            if(equipos[i]&&equipos[i+1]){
-                contadorSemilla+=1;let r1=randomConSemilla(contadorSemilla);
-                contadorSemilla+=2;let r2=randomConSemilla(contadorSemilla);
-                let constLocal=parseFloat((1.35+r1*2.2).toFixed(2));
-                let constVisitante=parseFloat((1.55+r2*3.2).toFixed(2));
-                let constEmpate=parseFloat((2.70+(r1+r2)/2*1.3).toFixed(2));
-                let constEstadoInicial=(i===0)?"En Vivo":"Próximamente";
-                partidosHoy.push({id:`${liga.toLowerCase().slice(0,3)}_${i}`,liga:liga,local:equipos[i],visitante:equipos[i+1],estado:constEstadoInicial,golesLocal:0,golesVisitante:0,cuotas:{"Local":constLocal,"Empate":constEmpate,"Visitante":constVisitante}});
-            }
-        }
-    }
-    let estructura={fecha:fechaHoy,lista:partidosHoy};
-    localStorage.setItem('partidos_del_dia_datos',JSON.stringify(estructura));
-    return estructura;
+
+// Generador matemático basado en el día
+const hoyObj = new Date();
+const semillaDia = hoyObj.getDate() + hoyObj.getMonth() + hoyObj.getFullYear();
+
+function randomConSemilla(semilla) {
+    let x = Math.sin(semilla) * 10000;
+    return x - Math.floor(x);
 }
-let datosGuardados=JSON.parse(localStorage.getItem('partidos_del_dia_datos'));
-if(!datosGuardados||datosGuardados.fecha!==fechaHoy){datosGuardados=generarPartidosNuevos();}
-let partidosDelDia=datosGuardados.lista;
-function procesarMercadoVivo(){
-    partidosDelDia.forEach(partido=>{
-        if(partido.estado==="Próximamente"){if(Math.random()>0.985){partido.estado="En Vivo";}}
-        else if(partido.estado==="En Vivo"){
-            if(Math.random()>0.85){
-                if(Math.random()>0.5){
-                    partido.golesLocal++;
-                    partido.cuotas["Local"]=Math.max(1.05,parseFloat((partido.cuotas["Local"]-0.4).toFixed(2)));
-                    partido.cuotas["Visitante"]=parseFloat((partido.cuotas["Visitante"]*1.6).toFixed(2));
-                }else{
-                    partido.golesVisitante++;
-                    partido.cuotas["Visitante"]=Math.max(1.05,parseFloat((partido.cuotas["Visitante"]-0.4).toFixed(2)));
-                    partido.cuotas["Local"]=parseFloat((partido.cuotas["Local"]*1.6).toFixed(2));
-                }
-                partido.cuotas["Empate"]=parseFloat((partido.cuotas["Empate"]+(Math.random()>0.5?0.4:-0.2)).toFixed(2));
-            }
-            if(Math.random()>0.97){partido.estado="Finalizado";}
-        }
+// INICIALIZACIÓN AUTOMÁTICA
+window.onload = function() {
+    actualizarPantalla();
+    inicializarLigas();
+};
+
+function actualizarPantalla() {
+    document.getElementById('balance-pantalla').innerText = `$${balance.toLocaleString('es-CO')} COP`;
+    localStorage.setItem('bet_balance', balance);
+    localStorage.setItem('bet_logs', JSON.stringify(logsSistema));
+
+    const contenedorLogs = document.getElementById('lista-logs');
+    contenedorLogs.innerHTML = '';
+    logsSistema.slice().reverse().forEach(log => {
+        contenedorLogs.innerHTML += `
+            <div class="log-item">
+                <span>${log.mensaje}</span>
+                <span class="log-hora">${log.hora}</span>
+            </div>
+        `;
     });
-    localStorage.setItem('partidos_del_dia_datos',JSON.stringify({fecha:fechaHoy,lista:partidosDelDia}));
-    renderizarInterfaz();
 }
-function renderizarInterfaz(){
-    const contenedor=document.getElementById('contenedor-partidos');
-    const balPantalla=document.getElementById('balance-pantalla');
-    if(balPantalla){balPantalla.innerText=balance.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});}
-    if(!contenedor)return;contenedor.innerHTML="";
-    const agruparLigas={};partidosDelDia.forEach(p=>{if(!agruparLigas[p.liga])agruparLigas[p.liga]=[];agruparLigas[p.liga].push(p);});
-    for(const liga in agruparLigas){
-        const divLiga=document.createElement('div');divLiga.className='liga-contenedor';
-        divLiga.innerHTML=`<h3>⚽ ${liga.replace(/_/g,' ')}</h3>`;
-        agruparLigas[liga].forEach(p=>{
-            const divPart=document.createElement('div');divPart.className='partido-card';
-            let pEstado=p.estado,divPartStyleBorder="",marcador="vs";
-            if(pEstado==="En Vivo"){divPartStyleBorder="border:1px solid #ff4d4d;";pEstado=`<span class="en-vivo">🔴 EN VIVO</span>`;marcador=`${p.golesLocal} - ${p.golesVisitante}`;}
-            else if(pEstado==="Finalizado"){marcador=`${p.golesLocal} - ${p.golesVisitante}`;}
-            divPart.style=divPartStyleBorder;
-            divPart.innerHTML=`<div><div><strong>${p.local}</strong> ${marcador} <strong>${p.visitante}</strong></div><small>${pEstado}</small></div><div class="cuotas-box"><button onclick="apostar('${p.id}','Local',${p.cuotas.Local})">L: ${p.cuotas.Local}</button><button onclick="apostar('${p.id}','Empate',${p.cuotas.Empate})">E: ${p.cuotas.Empate}</button><button onclick="apostar('${p.id}','Visitante',${p.cuotas.Visitante})">V: ${p.cuotas.Visitante}</button></div>`;
-            divLiga.appendChild(divPart);
-        });
-        contenedor.appendChild(divLiga);
+
+function inicializarLigas() {
+    const selectorLiga = document.getElementById('selector-liga');
+    selectorLiga.innerHTML = '';
+    for (const liga in equiposLigas) {
+        const option = document.createElement('option');
+        option.value = liga;
+        option.innerText = liga.replace(/_/g, ' ');
+        selectorLiga.appendChild(option);
     }
+    actualizarEquipos();
 }
-function apostar(partidoId,seleccion,valorCuota){
-    let monto=prompt(`¿Cuánto deseas apostar a [${seleccion}] con cuota ${valorCuota}?`,"5000");if(!monto)return;monto=parseFloat(monto);
-    if(isNaN(monto)||monto<=0||monto>balance){alert("Monto inválido o saldo insuficiente.");return;}
-    balance-=monto;localStorage.setItem('bet_balance',balance);
-    alert(`Apuesta realizada con éxito. Nuevo saldo: $${balance.toLocaleString('es-CO')}`);renderizarInterfaz();
+
+function actualizarEquipos() {
+    const ligaSel = document.getElementById('selector-liga').value;
+    const selectorEquipo = document.getElementById('selector-equipo');
+    selectorEquipo.innerHTML = '';
+    
+    equiposLigas[ligaSel].forEach(equipo => {
+        const option = document.createElement('option');
+        option.value = equipo;
+        option.innerText = equipo;
+        selectorEquipo.appendChild(option);
+    });
+    mostrarCuotasDinamicas();
 }
-window.onload=function(){renderizarInterfaz();setInterval(procesarMercadoVivo,4000);};
+
+function mostrarCuotasDinamicas() {
+    const equipo = document.getElementById('selector-equipo').value;
+    if(!equipo) return;
+    
+    let charCodeSum = 0;
+    for (let i = 0; i < equipo.length; i++) charCodeSum += equipo.charCodeAt(i);
+    
+    let r1 = randomConSemilla(semillaDia + charCodeSum);
+    let r2 = randomConSemilla(semillaDia + charCodeSum + 5);
+
+    let cLocal = (1.35 + r1 * 2.2).toFixed(2);
+    let cVisitante = (1.55 + r2 * 3.2).toFixed(2);
+    let cEmpate = (2.10 + ((r1 + r2) / 2) * 1.5).toFixed(2);
+
+    document.getElementById('panel-cuotas').innerHTML = `
+        <span><strong>L:</strong> ${cLocal}</span> 
+        <span><strong>E:</strong> ${cEmpate}</span> 
+        <span><strong>V:</strong> ${cVisitante}</span>
+    `;
+}
+
+function colocarApuesta() {
+    const montoInput = document.getElementById('monto-apuesta');
+    const monto = parseFloat(montoInput.value);
+    const equipo = document.getElementById('selector-equipo').value;
+    const liga = document.getElementById('selector-liga').value.replace(/_/g, ' ');
+
+    if (isNaN(monto) || monto <= 0) { alert("Monto inválido."); return; }
+    if (monto > balance) { alert("¡Saldo insuficiente!"); return; }
+
+    balance -= monto;
+    
+    logsSistema.push({
+        mensaje: `Apostaste $${monto.toLocaleString('es-CO')} al ${equipo} (${liga})`,
+        hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    actualizarPantalla();
+    alert(`Apuesta realizada.`);
+}
+
+function comprarPlan(monto, nombrePlan) {
+    balance += monto;
+    logsSistema.push({
+        mensaje: `Recarga Exitosa (${nombrePlan}): +$${monto.toLocaleString('es-CO')} COP`,
+        hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+    });
+    actualizarPantalla();
+    alert(`Se han acreditado $${monto.toLocaleString('es-CO')} COP a tu balance.`);
+}
 </script>
 </body>
 </html>
