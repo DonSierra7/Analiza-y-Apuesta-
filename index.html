@@ -1,198 +1,176 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Apuestas en Vivo</title>
-    <style>
-        body { background-color: #0b132b; color: white; font-family: sans-serif; padding: 15px; margin: 0; }
-        .header-app { background-color: #1c2541; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #5bc0be; }
-        .balance-txt { font-size: 1.3rem; color: #6fffe9; font-weight: bold; margin: 5px 0 0 0; }
-        .liga-contenedor { margin-bottom: 25px; }
-        .liga-titulo { background-color: #1c2541; padding: 10px; border-radius: 5px; color: #5bc0be; margin-bottom: 10px; font-size: 1.1rem; }
-        .partido-card { background-color: #1c2541; padding: 15px; margin: 10px 0; border-radius: 8px; transition: all 0.3s; }
-        .equipos { font-weight: bold; margin-bottom: 12px; font-size: 1.05rem; color: #ffffff; }
-        .cuotas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .boton-cuota { background-color: #3a506b; border: none; color: white; padding: 8px; border-radius: 4px; cursor: pointer; text-align: center; }
-        .cuota-valor { display: block; font-weight: bold; color: #6fffe9; font-size: 1.05rem; }
-    </style>
-</head>
-<body>
-
-    <div class="header-app">
-        <h1 style="margin:0; font-size: 1.4rem;">🏆 Central de Apuestas</h1>
-        <p class="balance-txt">Balance: $<span id="balance-pantalla">50.000</span> COP</p>
-    </div>
-
-    <!-- Contenedor donde JS inyectará los partidos automáticamente -->
-    <div id="contenedor-partidos"></div>
-
-    <!-- CARGA DE LOS ENLACES DE JAVASCRIPT EN ORDEN -->
-    <script src="datos.js"></script>
-    <script src="motor.js"></script>
-</body>
-</html>
-// VARIABLES GLOBALES DE BALANCE Y LOGS
-let balance = parseFloat(localStorage.getItem('bet_balance')) || 50000;
-let logsSistema = JSON.parse(localStorage.getItem('bet_logs')) || [
-    { mensaje: 'Bono inicial de 50.000 créditos otorgado.', hora: 'Inicio' }
-];
-
-// PROCESAMIENTO DE FECHAS Y SEMILLAS DIARIAS
-const opcionesFecha = { day: '2-digit', month: '2-digit', year: 'numeric' };
-const hoyObj = new Date();
-const fechaHoy = hoyObj.toLocaleDateString('es-CO', opcionesFecha);
-const semillaDia = hoyObj.getDate() + hoyObj.getMonth() + hoyObj.getFullYear();
-
-// BASE DE DATOS DE EQUIPOS POR LIGA
-const equiposLigas = {
-    "LA_LIGA_ESPANA": ["Real Madrid", "Barcelona", "Atlético de Madrid", "Real Sociedad", "Villarreal", "Sevilla", "Athletic Club", "Real Betis"],
-    "SERIE_A_ITALIA": ["Inter de Milán", "Napoli", "AC Milan", "Juventus", "AS Roma", "Atalanta", "Lazio", "Fiorentina"],
-    "PREMIER_LEAGUE": ["Liverpool", "Manchester City", "Arsenal", "Chelsea", "Tottenham", "Aston Villa", "Manchester United", "Newcastle"],
-    "BUNDESLIGA_ALEMANIA": ["Bayern Múnich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig", "Einfacht Frankfurt", "Stuttgart"],
-    "LIGA_BETPLAY_COLOMBIA": ["Millonarios", "Santa Fe", "Atlético Nacional", "América de Cali", "Junior", "Deportivo Cali", "Ind. Medellín", "Deportes Tolima"],
-    "LIGA_ARGENTINA": ["Boca Juniors", "River Plate", "Racing Club", "Independiente", "San Lorenzo", "Vélez Sarsfield", "Estudiantes", "Talleres"],
-    "BRASILEIRAO_BRASIL": ["Flamengo", "Palmeiras", "Botafogo", "São Paulo", "Fluminense", "Atlético Mineiro", "Grêmio", "Internacional"],
-    "CHAMPIONS_LEAGUE": ["Real Madrid", "Manchester City", "Bayern Múnich", "PSG", "Arsenal", "Inter de Milán", "Barcelona", "Bayer Leverkusen"],
-    "EUROPA_LEAGUE": ["Manchester United", "Tottenham", "Roma", "Porto", "Ajax", "Real Sociedad", "Athletic Club", "Eintracht Frankfurt"]
-};
-// Generador numérico con semilla fija por día
-function randomConSemilla(semilla) {
-    let x = Math.sin(semilla) * 10000;
-    return x - Math.floor(x);
-}
-
-// Generador del fixture matutino automático
-function generarPartidosNuevos() {
-    const partidosHoy = [];
-    let contadorSemilla = parseInt(semillaDia);
-
-    for (const liga in equiposLigas) {
-        const equipos = equiposLigas[liga];
-        
-        for (let i = 0; i < equipos.length; i += 2) {
-            if (equipos[i] && equipos[i + 1]) {
-                contadorSemilla += 1;
-                let r1 = randomConSemilla(contadorSemilla);
-                let r2 = randomConSemilla(contadorSemilla + 2);
-
-                // Cuotas dinámicas iniciales equilibradas
-                const cLocal = parseFloat((1.35 + r1 * 2.2).toFixed(2));
-                const cVisitante = parseFloat((1.55 + r2 * 3.2).toFixed(2));
-                const cEmpate = parseFloat((2.70 + ((r1 + r2) / 2) * 1.3).toFixed(2));
-                
-                // Definimos el primer partido de cada liga en vivo para probar el simulador
-                const estadoInicial = (i === 0) ? "En Vivo" : "Proximamente";
-
-                partidosHoy.push({
-                    id: `${liga.toLowerCase()}_${i}`,
-                    liga: liga,
-                    local: equipos[i],
-                    visitante: equipos[i + 1],
-                    estado: estadoInicial,
-                    golesLocal: 0,
-                    golesVisitante: 0,
-                    cuotas: { "Local": cLocal, "Empate": cEmpate, "Visitante": cVisitante }
-                });
-            }
+        function randomConSemilla(semilla) {
+            let x = Math.sin(semilla) * 10000;
+            return x - Math.floor(x);
         }
-    }
-    const estructura = { fecha: fechaHoy, lista: partidosHoy };
-    localStorage.setItem('partidos_del_dia_datos', JSON.stringify(estructura));
-    return estructura;
-}
 
-// Carga o creación automática del fixture diario
-let datosGuardados = JSON.parse(localStorage.getItem('partidos_del_dia_datos'));
-if (!datosGuardados || datosGuardados.fecha !== fechaHoy) {
-    datosGuardados = generarPartidosNuevos();
-}
-let partidosDelDia = datosGuardados.lista;
-
-// Motor de Fluctuación: Modifica las cuotas y añade goles en tiempo real
-function procesarMercadoVivo() {
-    partidosDelDia.forEach(partido => {
-        if (partido.estado === "Proximamente") {
-            // El mercado prematch varía ligeramente por centavos
-            const variacion = Math.random() > 0.5 ? 0.01 : -0.01;
-            partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] + variacion).toFixed(2)));
-        } else if (partido.estado === "En Vivo") {
-            // 1.5% de probabilidad de gol cada 4 segundos
-            if (Math.random() > 0.985) { 
-                if (Math.random() > 0.5) {
-                    partido.golesLocal++;
-                    partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] / 1.4).toFixed(2)));
-                    partido.cuotas["Visitante"] = parseFloat((partido.cuotas["Visitante"] * 1.6).toFixed(2));
-                } else {
-                    partido.golesVisitante++;
-                    partido.cuotas["Visitante"] = Math.max(1.05, parseFloat((partido.cuotas["Visitante"] / 1.4).toFixed(2)));
-                    partido.cuotas["Local"] = parseFloat((partido.cuotas["Local"] * 1.6).toFixed(2));
+        function generarPartidosNuevos() {
+            const partidosHoy = [];
+            let contadorSemilla = parseInt(semillaDia);
+            for (const liga in equiposLigas) {
+                const equipos = equiposLigas[liga];
+                for (let i = 0; i < equipos.length; i += 2) {
+                    if (equipos[i] && equipos[i + 1]) {
+                        contadorSemilla += 1;
+                        let r1 = randomConSemilla(contadorSemilla);
+                        let r2 = randomConSemilla(contadorSemilla + 2);
+                        const cLocal = parseFloat((1.35 + r1 * 2.2).toFixed(2));
+                        const cVisitante = parseFloat((1.55 + r2 * 3.2).toFixed(2));
+                        const cEmpate = parseFloat((2.70 + ((r1 + r2) / 2) * 1.3).toFixed(2));
+                        const estadoInicial = (i === 0) ? "En Vivo" : "Proximamente";
+                        partidosHoy.push({
+                            id: `${liga.toLowerCase()}_${i}`, liga: liga, local: equipos[i], visitante: equipos[i + 1],
+                            estado: estadoInicial, golesLocal: 0, golesVisitante: 0,
+                            cuotas: { "Local": cLocal, "Empate": cEmpate, "Visitante": cVisitante }
+                        });
+                    }
                 }
             }
-            partido.cuotas["Empate"] = Math.max(1.10, parseFloat((partido.cuotas["Empate"] + (Math.random() > 0.5 ? 0.04 : -0.04)).toFixed(2)));
+            const estructura = { fecha: fechaHoy, lista: partidosHoy };
+            localStorage.setItem('partidos_del_dia_datos', JSON.stringify(estructura));
+            return estructura;
         }
-    });
 
-    localStorage.setItem('partidos_del_dia_datos', JSON.stringify({ fecha: fechaHoy, lista: partidosDelDia }));
-    renderizarInterfaz();
-}
+        let datosGuardados = JSON.parse(localStorage.getItem('partidos_del_dia_datos'));
+        if (!datosGuardados || datosGuardados.fecha !== fechaHoy) { datosGuardados = generarPartidosNuevos(); }
+        let partidosDelDia = datosGuardados.lista;
 
-// Renderizador visual dinámico
-function renderizarInterfaz() {
-    const contenedor = document.getElementById('contenedor-partidos');
-    const balPantalla = document.getElementById('balance-pantalla');
-    
-    if (balPantalla) balPantalla.innerText = balance.toLocaleString('es-CO');
-    if (!contenedor) return;
-    contenedor.innerHTML = "";
+        function procesarMercadoVivo() {
+            partidosDelDia.forEach(partido => {
+                if (partido.estado === "Proximamente") {
+                    const variacion = Math.random() > 0.5 ? 0.01 : -0.01;
+                    partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] + variacion).toFixed(2)));
+                } else if (partido.estado === "En Vivo") {
+                    if (Math.random() > 0.985) { 
+                        if (Math.random() > 0.5) {
+                            partido.golesLocal++;
+                            partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] / 1.4).toFixed(2)));
+                            partido.cuotas["Visitante"] = parseFloat((partido.cuotas["Visitante"] * 1.6).toFixed(2));
+                        } else {
+                            partido.golesVisitante++;
+                            partido.cuotas["Visitante"] = Math.max(1.05, parseFloat((partido.cuotas["Visitante"] / 1.4).toFixed(2)));
+                            partido.cuotas["Local"] = parseFloat((partido.cuotas["Local"] * 1.6).toFixed(2));
+                        }
+                    }
+                    partido.cuotas["Empate"] = Math.max(1.10, parseFloat((partido.cuotas["Empate"] + (Math.random() > 0.5 ? 0.04 : -0.04)).toFixed(2)));
+                }
+            });
+            localStorage.setItem('partidos_del_dia_datos', JSON.stringify({ fecha: fechaHoy, lista: partidosDelDia }));
+            renderizarInterfaz();
+        }
+        let balance = parseFloat(localStorage.getItem('bet_balance')) || 50000;
+        let logsSistema = JSON.parse(localStorage.getItem('bet_logs')) || [{ mensaje: 'Bono inicial', hora: 'Inicio' }];
+        const opcionesFecha = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const hoyObj = new Date();
+        const fechaHoy = hoyObj.toLocaleDateString('es-CO', opcionesFecha);
+        const semillaDia = hoyObj.getDate() + hoyObj.getMonth() + hoyObj.getFullYear();
 
-    const agruparLigas = {};
-    partidosDelDia.forEach(p => {
-        if (!agruparLigas[p.liga]) agruparLigas[p.liga] = [];
-        agruparLigas[p.liga].push(p);
-    });
+        const equiposLigas = {
+            "LA_LIGA_ESPANA": ["Real Madrid", "Barcelona", "Atlético de Madrid", "Real Sociedad", "Villarreal", "Sevilla", "Athletic Club", "Real Betis"],
+            "SERIE_A_ITALIA": ["Inter de Milán", "Napoli", "AC Milan", "Juventus", "AS Roma", "Atalanta", "Lazio", "Fiorentina"],
+            "PREMIER_LEAGUE": ["Liverpool", "Manchester City", "Arsenal", "Chelsea", "Tottenham", "Aston Villa", "Manchester United", "Newcastle"],
+            "BUNDESLIGA_ALEMANIA": ["Bayern Múnich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig", "Einfacht Frankfurt", "Stuttgart"],
+            "LIGA_BETPLAY_COLOMBIA": ["Millonarios", "Santa Fe", "Atlético Nacional", "América de Cali", "Junior", "Deportivo Cali", "Ind. Medellín", "Deportes Tolima"],
+            "LIGA_ARGENTINA": ["Boca Juniors", "River Plate", "Racing Club", "Independiente", "San Lorenzo", "Vélez Sarsfield", "Estudiantes", "Talleres"],
+            "BRASILEIRAO_BRASIL": ["Flamengo", "Palmeiras", "Botafogo", "São Paulo", "Fluminense", "Atlético Mineiro", "Grêmio", "Internacional"],
+            "CHAMPIONS_LEAGUE": ["Real Madrid", "Manchester City", "Bayern Múnich", "PSG", "Arsenal", "Inter de Milán", "Barcelona", "Bayer Leverkusen"],
+            "EUROPA_LEAGUE": ["Manchester United", "Tottenham", "Roma", "Porto", "Ajax", "Real Sociedad", "Athletic Club", "Eintracht Frankfurt"]
+        };
+        function randomConSemilla(semilla) {
+            let x = Math.sin(semilla) * 10000;
+            return x - Math.floor(x);
+        }
 
-    for (const liga in agruparLigas) {
-        const divLiga = document.createElement('div');
-        divLiga.className = 'liga-contenedor';
-        divLiga.innerHTML = `<h2 class="liga-titulo">⚽ ${liga.toUpperCase().replace(/_/g, ' ')}</h2>`;
+        function generarPartidosNuevos() {
+            const partidosHoy = [];
+            let contadorSemilla = parseInt(semillaDia);
+            for (const liga in equiposLigas) {
+                const equipos = equiposLigas[liga];
+                for (let i = 0; i < equipos.length; i += 2) {
+                    if (equipos[i] && equipos[i + 1]) {
+                        contadorSemilla += 1;
+                        let r1 = randomConSemilla(contadorSemilla);
+                        let r2 = randomConSemilla(contadorSemilla + 2);
+                        const cLocal = parseFloat((1.35 + r1 * 2.2).toFixed(2));
+                        const cVisitante = parseFloat((1.55 + r2 * 3.2).toFixed(2));
+                        const cEmpate = parseFloat((2.70 + ((r1 + r2) / 2) * 1.3).toFixed(2));
+                        const estadoInicial = (i === 0) ? "En Vivo" : "Proximamente";
+                        partidosHoy.push({
+                            id: `${liga.toLowerCase()}_${i}`, liga: liga, local: equipos[i], visitante: equipos[i + 1],
+                            estado: estadoInicial, golesLocal: 0, golesVisitante: 0,
+                            cuotas: { "Local": cLocal, "Empate": cEmpate, "Visitante": cVisitante }
+                        });
+                    }
+                }
+            }
+            const estructura = { fecha: fechaHoy, lista: partidosHoy };
+            localStorage.setItem('partidos_del_dia_datos', JSON.stringify(estructura));
+            return estructura;
+        }
 
-        agruparLigas[liga].forEach(p => {
-            const divPart = document.createElement('div');
-            divPart.className = 'partido-card';
-            divPart.style.border = p.estado === "En Vivo" ? "1px solid #ff4757" : "1px solid #3a506b";
+        let datosGuardados = JSON.parse(localStorage.getItem('partidos_del_dia_datos'));
+        if (!datosGuardados || datosGuardados.fecha !== fechaHoy) { datosGuardados = generarPartidosNuevos(); }
+        let partidosDelDia = datosGuardados.lista;
 
-            const marcador = p.estado === "En Vivo" 
-                ? `<span style="color: #ff4757; font-weight: bold; float: right;">🔴 EN VIVO (${p.golesLocal} - ${p.golesVisitante})</span>`
-                : `<span style="color: #888; font-size: 0.85rem; float: right;">📅 Hoy</span>`;
-
-            divPart.innerHTML = `
-                <div class="equipos">${p.local} vs ${p.visitante} ${marcador}</div>
-                <div class="cuotas-grid">
-                    <button class="boton-cuota" onclick="apostar('${p.id}', 'Local', '${p.cuotas['Local']}')">
-                        L <span class="cuota-valor">${p.cuotas['Local']}</span>
-                    </button>
-                    <button class="boton-cuota" onclick="apostar('${p.id}', 'Empate', '${p.cuotas['Empate']}')">
-                        E <span class="cuota-valor">${p.cuotas['Empate']}</span>
-                    </button>
-                    <button class="boton-cuota" onclick="apostar('${p.id}', 'Visitante', '${p.cuotas['Visitante']}')">
-                        V <span class="cuota-valor">${p.cuotas['Visitante']}</span>
-                    </button>
-                </div>
-            `;
-            divLiga.appendChild(divPart);
-        });
-        contenedor.appendChild(divLiga);
-    }
-}
-
-// Escuchador de clics en las cuotas activas
-window.apostar = function(id, mercado, valorCuota) {
-    alert(`Selección: ${mercado} (Cuota: ${valorCuota}) del juego: ${id}`);
-};
-
-// Inicialización del temporizador del mercado (Cada 4 segundos refresca)
-document.addEventListener("DOMContentLoaded", () => {
-    renderizarInterfaz();
-    setInterval(procesarMercadoVivo, 4000);
-});
+        function procesarMercadoVivo() {
+            partidosDelDia.forEach(partido => {
+                if (partido.estado === "Proximamente") {
+                    const variacion = Math.random() > 0.5 ? 0.01 : -0.01;
+                    partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] + variacion).toFixed(2)));
+                } else if (partido.estado === "En Vivo") {
+                    if (Math.random() > 0.985) { 
+                        if (Math.random() > 0.5) {
+                            partido.golesLocal++;
+                            partido.cuotas["Local"] = Math.max(1.05, parseFloat((partido.cuotas["Local"] / 1.4).toFixed(2)));
+                            partido.cuotas["Visitante"] = parseFloat((partido.cuotas["Visitante"] * 1.6).toFixed(2));
+                        } else {
+                            partido.golesVisitante++;
+                            partido.cuotas["Visitante"] = Math.max(1.05, parseFloat((partido.cuotas["Visitante"] / 1.4).toFixed(2)));
+                            partido.cuotas["Local"] = parseFloat((partido.cuotas["Local"] * 1.6).toFixed(2));
+                        }
+                    }
+                    partido.cuotas["Empate"] = Math.max(1.10, parseFloat((partido.cuotas["Empate"] + (Math.random() > 0.5 ? 0.04 : -0.04)).toFixed(2)));
+                }
+            });
+            localStorage.setItem('partidos_del_dia_datos', JSON.stringify({ fecha: fechaHoy, lista: partidosDelDia }));
+            renderizarInterfaz();
+        }
+        function renderizarInterfaz() {
+            const contenedor = document.getElementById('contenedor-partidos');
+            const balPantalla = document.getElementById('balance-pantalla');
+            if (balPantalla) balPantalla.innerText = balance.toLocaleString('es-CO');
+            if (!contenedor) return;
+            contenedor.innerHTML = "";
+            const agruparLigas = {};
+            partidosDelDia.forEach(p => {
+                if (!agruparLigas[p.liga]) agruparLigas[p.liga] = [];
+                agruparLigas[p.liga].push(p);
+            });
+            for (const liga in agruparLigas) {
+                const divLiga = document.createElement('div');
+                divLiga.className = 'liga-contenedor';
+                divLiga.innerHTML = `<h2 class="liga-titulo">⚽ ${liga.replace(/_/g, ' ')}</h2>`;
+                agruparLigas[liga].forEach(p => {
+                    const divPart = document.createElement('div');
+                    divPart.className = 'partido-card';
+                    divPart.style.border = p.estado === "En Vivo" ? "1px solid #ff4757" : "1px solid #3a506b";
+                    const marcador = p.estado === "En Vivo" 
+                        ? `<span style="color: #ff4757; font-weight: bold; float: right;">🔴 EN VIVO (${p.golesLocal} - ${p.golesVisitante})</span>`
+                        : `<span style="color: #888; font-size: 0.85rem; float: right;">📅 Próximamente</span>`;
+                    divPart.innerHTML = `
+                        <div class="equipos">${p.local} vs ${p.visitante} ${marcador}</div>
+                        <div class="cuotas-grid">
+                            <button class="boton-cuota" onclick="apostar('${p.id}', 'Local', '${p.cuotas['Local']}')">L <span class="cuota-valor">${p.cuotas['Local']}</span></button>
+                            <button class="boton-cuota" onclick="apostar('${p.id}', 'Empate', '${p.cuotas['Empate']}')">E <span class="cuota-valor">${p.cuotas['Empate']}</span></button>
+                            <button class="boton-cuota" onclick="apostar('${p.id}', 'Visitante', '${p.cuotas['Visitante']}')">V <span class="cuota-valor">${p.cuotas['Visitante']}</span></button>
+                        </div>
+                    `;
+                    divLiga.appendChild(divPart);
+                });
+                contenedor.appendChild(divLiga);
+            }
+        }
+        window.apostar = function(id, mercado, valorCuota) { alert(`Selección: ${mercado} (Cuota: ${valorCuota})`); };
+        document.addEventListener("DOMContentLoaded", () => { renderizarInterfaz(); setInterval(procesarMercadoVivo, 4000); });
+    </script>
+</body>
+</html>
