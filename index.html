@@ -154,17 +154,72 @@
             <div id="transaction-logs" class="contenedor-logs"></div>
         </div>
     </main>
-    <script>
-        let balance = parseFloat(localStorage.getItem('bet_balance')) || 50000;
+            let balance = parseFloat(localStorage.getItem('bet_balance')) || 50000;
         let logsSistema = JSON.parse(localStorage.getItem('bet_logs')) || [{ mensaje: 'Bono inicial de 50.000 créditos otorgado.', hora: 'Inicio' }];
         
-        window.onload = function() { refrescarUI(); };
+        const opcionesFecha = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const hoyObj = new Date();
+        const fechaHoy = hoyObj.toLocaleDateString('es-CO', opcionesFecha);
+        const mañanaObj = new Date(); mañanaObj.setDate(hoyObj.getDate() + 1);
+        const fechaMañana = mañanaObj.toLocaleDateString('es-CO', opcionesFecha);
+
+        const semillaDia = hoyObj.getDate() + hoyObj.getMonth() + hoyObj.getFullYear();
+
+        const equiposLigas = {
+            "LALIGA": ["Real Madrid", "Barcelona", "Atlético de Madrid", "Real Sociedad", "Villarreal", "Sevilla", "Athletic Club", "Real Betis"],
+            "SERIEA": ["Inter de Milán", "Napoli", "AC Milan", "Juventus", "AS Roma", "Atalanta", "Lazio", "Fiorentina"],
+            "PREMIER": ["Liverpool", "Manchester City", "Arsenal", "Chelsea", "Tottenham", "Aston Villa", "Manchester United", "Newcastle"],
+            "BUNDESLIGA": ["Bayern Múnich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig", "Eintracht Frankfurt", "Stuttgart"],
+            "BETPLAY": ["Millonarios", "Santa Fe", "Atlético Nacional", "América de Cali", "Junior", "Deportivo Cali", "Ind. Medellín", "Deportes Tolima"]
+        };
+
+        const listadoPicks = ["Gana Local", "Gana Visitante", "Empate", "Ambos Anotan", "Más de 2.5 Goles", "Menos de 2.5 Goles"];
+        const jugadoresClave = ["Mbappé", "Vinícius Jr", "Lewandowski", "Haaland", "Salah", "Saka", "Lautaro", "Vlahovic", "Wirtz", "Kane", "James", "Bacca"];
+
+        function randomConSemilla(s) {
+            let x = Math.sin(s) * 10000;
+            return x - Math.floor(x);
+        }
+        function generarPartidosDelDia() {
+            let partidos = [];
+            let contador = 1;
+            for (const [codigoLiga, listaEquipos] of Object.entries(equiposLigas)) {
+                for (let dia = 0; dia < 2; dia++) {
+                    let sem = semillaDia + contador + dia;
+                    let idx1 = Math.floor(randomConSemilla(sem) * listaEquipos.length);
+                    let idx2 = Math.floor(randomConSemilla(sem + 5) * listaEquipos.length);
+                    if (idx1 === idx2) idx2 = (idx1 + 1) % listaEquipos.length;
+                    let local = listaEquipos[idx1]; let visita = listaEquipos[idx2];
+                    let porcLocal = Math.floor(35 + randomConSemilla(sem + 10) * 45);
+                    let porcVisita = Math.floor(15 + randomConSemilla(sem + 15) * (90 - porcLocal));
+                    let porcEmpate = 100 - porcLocal - porcVisita;
+                    let pickIdx = Math.floor(randomConSemilla(sem + 20) * listadoPicks.length);
+                    let j1 = jugadoresClave[Math.floor(randomConSemilla(sem + 25) * jugadoresClave.length)];
+                    let j2 = jugadoresClave[Math.floor(randomConSemilla(sem + 30) * jugadoresClave.length)];
+                    partidos.push({
+                        id: contador, liga: codigoLiga, fecha: dia === 0 ? fechaHoy : fechaMañana,
+                        juego: `${local} vs ${visita}`, pick: listadoPicks[pickIdx], porc: porcLocal,
+                        pLocal: porcLocal, pEmpate: porcEmpate, pVisita: porcVisita, est: dia === 0 ? "Hoy" : "Mañana",
+                        alineacionLocal: `4-3-3: Courtois; Carvajal, Militão; Valverde, Bellingham; ${j1}, Rodrygo.`,
+                        alineacionVisita: `4-2-3-1: Ter Stegen; Koundé, Araújo; De Jong; Pedri, Lamine Yamal; ${j2}.`
+                    });
+                    contador++;
+                }
+            }
+            return partidos;
+        }
+
+        const bdpPartidos = generarPartidosDelDia();
+
+        window.onload = function() { refrescarUI(); filtrarPartidosPorLiga(); actualizarSelectApuestas(); };
+
         function refrescarUI() {
             document.getElementById('balance-display').innerText = balance.toLocaleString('en-US');
             localStorage.setItem('bet_balance', balance);
             const caja = document.getElementById('transaction-logs'); caja.innerHTML = '';
             logsSistema.forEach(l => { caja.innerHTML += `<div class="item-log"><span>${l.mensaje}</span><span>${l.hora}</span></div>`; });
         }
+
         function cambiarPestana(id) {
             ['juego', 'analisis', 'premium'].forEach(s => {
                 document.getElementById(`sec-${s}`).classList.remove('activa');
@@ -173,6 +228,45 @@
             document.getElementById(`sec-${id}`).classList.add('activa');
             document.getElementById(`tab-${id}`).classList.add('activa');
         }
+        function filtrarPartidosPorLiga() {
+            const ligaSeleccionada = document.getElementById('filtro-liga').value;
+            const cuerpoTabla = document.getElementById('tabla-partidos-body'); cuerpoTabla.innerHTML = '';
+            const partidosFiltrados = bdpPartidos.filter(p => ligaSeleccionada === "TODAS" || p.liga === ligaSeleccionada);
+            partidosFiltrados.forEach(p => {
+                cuerpoTabla.innerHTML += `
+                    <tr style="cursor: pointer; border-bottom: 1px solid rgba(51, 65, 85, 0.6);" onclick="mostrarDetallePartido(${p.id})">
+                        <td style="color: var(--texto-mutado); font-size: 11px;">${p.fecha}</td>
+                        <td style="font-weight: bold; color: #FFF;">${p.juego} <br><span style="font-size:10px; color:var(--azul-brillante)">ℹ️ Ver Alineaciones</span></td>
+                        <td style="color: var(--azul-brillante); font-weight: bold;">${p.pick}</td>
+                        <td><div class="porcentaje-barra-bg"><div class="porcentaje-barra-fill" style="width: ${p.porc}%"></div></div><span>${p.porc}%</span></td>
+                        <td style="text-align: right; color: var(--amarillo-oro); font-weight: bold;">${p.est}</td>
+                    </tr>
+                    <tr id="detalle-${p.id}" style="display:none; background-color: rgba(11, 19, 43, 0.4);">
+                        <td colspan="5" style="padding: 12px; font-size: 12px; color: var(--texto-mutado);">
+                            <strong>📊 Probabilidades:</strong> Local: ${p.pLocal}% | Empate: ${p.pEmpate}% | Visitante: ${p.pVisita}%<br>
+                            <strong>📋 Alineación Local:</strong> ${p.alineacionLocal}<br>
+                            <strong>📋 Alineación Visitante:</strong> ${p.alineacionVisita}
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function mostrarDetallePartido(id) {
+            const fila = document.getElementById(`detalle-${id}`);
+            fila.style.display = fila.style.display === "none" ? "table-row" : "none";
+        }
+
+        function actualizarSelectApuestas() {
+            const select = document.getElementById('bet-target'); select.innerHTML = '';
+            const partidosHoy = bdpPartidos.filter(p => p.est === "Hoy");
+            partidosHoy.forEach(p => {
+                select.innerHTML += `
+                    <option value="${p.juego} - Local">${p.juego} (Local - 1.85)</option>
+                    <option value="${p.juego} - Empate">${p.juego} (Empate - 3.40)</option>
+                    <option value="${p.juego} - Visitante">${p.juego} (Visita - 2.10)</option>`;
+            });
+        }
+
         function fijarMonto(c) { document.getElementById('bet-amount').value = c; }
         function duplicarMonto() { document.getElementById('bet-amount').value *= 2; }
         function mostrarMensaje(t) { const tos = document.getElementById('toast'); tos.innerText = t; tos.style.display = 'block'; setTimeout(() => { tos.style.display = 'none'; }, 2500); }
@@ -181,6 +275,7 @@
             logsSistema.unshift({ mensaje: t, hora: h }); if (logsSistema.length > 10) logsSistema.pop();
             localStorage.setItem('bet_logs', JSON.stringify(logsSistema)); refrescarUI();
         }
+
         function ejecutarApuesta() {
             const m = parseFloat(document.getElementById('bet-amount').value);
             const el = document.getElementById('bet-target').value;
@@ -189,20 +284,22 @@
             const est = document.getElementById('game-status'); est.innerText = "Procesando..."; est.style.color = "var(--amarillo-oro)";
             setTimeout(() => {
                 const ops = ['Local', 'Empate', 'Visitante']; const res = ops[Math.floor(Math.random() * 3)];
-                if (el === res) {
+                const meta = el.split(' - ');
+                if (el.includes(res)) {
                     const cuotas = { 'Local': 1.85, 'Empate': 3.40, 'Visitante': 2.10 }; const premio = Math.floor(m * cuotas[res]);
-                    balance += premio; est.innerText = `¡GANASTE! (${res})`; est.style.color = "var(--verde-exito)";
-                    registrar(`Ganaste apuesta a ${el}. +${premio.toLocaleString()} cr.`);
+                    balance += premio; est.innerText = `¡GANASTE! (Salió ${res})`; est.style.color = "var(--verde-exito)";
+                    registrar(`Ganaste apuesta en ${meta[0]}. +${premio.toLocaleString()} cr.`);
                 } else {
-                    est.innerText = `PERDISTE (${res})`; est.style.color = "var(--rojo-error)";
-                    registrar(`Perdiste ${m.toLocaleString()} cr. en ${el}.`);
+                    est.innerText = `PERDISTE (Salió ${res})`; est.style.color = "var(--rojo-error)";
+                    registrar(`Perdiste ${m.toLocaleString()} cr. en ${meta[0]}.`);
                 }
                 refrescarUI();
             }, 1000);
         }
+
         function adquirirPaquete(n, c, s) {
             if (confirm(`¿Comprar ${n} por $${c.toLocaleString('es-CO')}?`)) { balance += s; registrar(`Carga Premium ${n}: +${s.toLocaleString()} cr.`); }
         }
-    </script>
+
 </body>
 </html>
