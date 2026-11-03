@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetAnalytics Pro - Plataforma de Apuestas y Análisis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            darkbg: '#0B132B',
+                            darkcard: '#1C2541',
+                            accent: '#48CAE4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B132B;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1C2541;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #48CAE4;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-cyan-600 text-white px-6 py-3 rounded-lg shadow-xl flex items-center space-x-2 pointer-events-none">
+        <i data-lucide="info" class="w-5 h-5"></i>
+        <span id="toast-text">Notificación</span>
+    </div>
+
+    <nav class="bg-[#1C2541] border-b border-slate-700 sticky top-0 z-40 px-4 lg:px-8 py-4 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-cyan-500 p-2 rounded-lg text-slate-900">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+            </div>
+            <span class="text-xl font-bold tracking-wider text-white">Bet<span class="text-cyan-400">Analytics</span></span>
+        </div>
+        <div class="flex items-center space-x-6 mt-2 sm:mt-0">
+            <div class="bg-[#0B132B] border border-cyan-500/30 rounded-full px-4 py-1.5 flex items-center space-x-2 shadow-inner">
+                <i data-lucide="coins" class="w-5 h-5 text-yellow-400 animate-pulse"></i>
+                <span class="text-xs text-slate-400 uppercase font-semibold">Créditos:</span>
+                <span id="balance-display" class="font-bold text-cyan-400 text-lg">50,000</span>
+            </div>
+            <div class="flex items-center space-x-2 border-l border-slate-700 pl-4">
+                <div class="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center font-bold text-sm text-white">U</div>
+                <span class="hidden md:inline text-sm text-slate-300 font-medium">Demo User</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
+            <section class="bg-[#1C2541] rounded-2xl p-6 border border-slate-700/60 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold flex items-center space-x-2 text-white">
+                        <i data-lucide="gamepad-2" class="text-cyan-400 w-6 h-6"></i>
+                        <span>Módulo de Apuestas Express</span>
+                    </h2>
+                    <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-semibold uppercase flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> En Vivo
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4 bg-[#0B132B]/50 p-4 rounded-xl border border-slate-700/40">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Monto a Apostar</label>
+                            <div class="relative">
+                                <input type="number" id="bet-amount" value="5000" min="100" class="w-full bg-[#0B132B] border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-cyan-400 font-semibold text-white">
+                                <i data-lucide="dollar-sign" class="w-4 h-4 text-slate-400 absolute left-3 top-3.5"></i>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="setBetAmount(5000)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-1 rounded transition">5K</button>
+                                <button onclick="setBetAmount(10000)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-1 rounded transition">10K</button>
+                                <button onclick="setBetAmount(25000)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-1 rounded transition">25K</button>
+                                <button onclick="multiplyBet(2)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-1 rounded transition">x2</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase mb-2">Selección del Evento</label>
+                            <select id="bet-target" class="w-full bg-[#0B132B] border border-slate-600 rounded-lg px-3 py-2.5 focus:outline-none focus:border-cyan-400 text-slate-200">
+                                <option value="Local">Victoria Local (Cuota: 1.85)</option>
+                                <option value="Empate">Empate (Cuota: 3.40)</option>
+                                <option value="Visitante">Victoria Visitante (Cuota: 2.10)</option>
+                            </select>
+                        </div>
+                        <button onclick="placeBet()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-slate-900 font-bold py-3 rounded-lg transition transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-cyan-500/20">
+                            Procesar Apuesta
+                        </button>
+                    </div>
+                    <div class="flex flex-col justify-between bg-[#0B132B]/50 p-4 rounded-xl border border-slate-700/40 min-h-[200px]">
+                        <div class="text-center py-4">
+                            <p class="text-xs uppercase text-slate-400 tracking-wider">Último Resultado Operado</p>
+                            <div id="game-status" class="text-2xl font-black mt-2 text-slate-300">- Esperando Acción -</div>
+                        </div>
+                        <div class="border-t border-slate-700/60 pt-3">
+                            <p class="text-xs font-semibold text-slate-400 mb-2 uppercase">Historial de Rondas</p>
+                            <div id="recent-results" class="flex items-center space-x-2 overflow-x-auto pb-1">
+                                <span class="bg-slate-800 border border-slate-700 px-2 py-1 rounded text-xs text-slate-400">Vacío</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="bg-[#1C2541] rounded-2xl p-6 border border-slate-700/60 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold flex items-center space-x-2 text-white">
+                        <i data-lucide="bar-chart-3" class="text-cyan-400 w-6 h-6"></i>
+                        <span>Algoritmo de Análisis Predictivo</span>
+                    </h2>
+                    <span class="bg-cyan-500/10 text-cyan-400 text-xs px-2.5 py-1 rounded-full font-semibold">IA V4.2</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-[#0B132B] p-4 rounded-xl border border-slate-700/50 text-center">
+                        <p class="text-xs text-slate-400 uppercase font-medium">Margen de Acierto</p>
+                        <p class="text-2xl font-bold text-emerald-400 mt-1">87.4%</p>
+                    </div>
+                    <div class="bg-[#0B132B] p-4 rounded-xl border border-slate-700/50 text-center">
+                        <p class="text-xs text-slate-400 uppercase font-medium">Análisis Calculados</p>
+                        <p class="text-2xl font-bold text-cyan-400 mt-1">14,209</p>
+                    </div>
+                    <div class="bg-[#0B132B] p-4 rounded-xl border border-slate-700/50 text-center">
+                        <p class="text-xs text-slate-400 uppercase font-medium">Tendencia Global</p>
+                        <p class="text-2xl font-bold text-blue-400 mt-1">Alcista</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 tracking-wider">
+                                <th class="pb-3 font-semibold">Evento Predictivo</th>
+                                <th class="pb-3 font-semibold">Recomendación</th>
+                                <th class="pb-3 font-semibold text-center">Probabilidad</th>
+                                <th class="pb-3 font-semibold text-right">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-slate-700/50">
+                            <tr>
+                                <td class="py-3 font-medium">Real Madrid vs Barcelona</td>
+                                <td class="py-3 text-cyan-400 font-semibold">Gana Local (1)</td>
+                                <td class="py-3 text-center">
+                                    <div class="bg-slate-800 rounded-full h-2 w-24 mx-auto overflow-hidden">
+                                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style="width: 82%"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400 mt-1 block">82%</span>
+                                </td>
+                                <td class="py-3 text-right"><span class="bg-yellow-500/10 text-yellow-400 text-xs px-2 py-0.5 rounded font-medium">Pendiente</span></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 font-medium">Manchester City vs Liverpool</td>
+                                <td class="py-3 text-cyan-400 font-semibold">Más de 2.5 Goles</td>
+                                <td class="py-3 text-center">
+                                    <div class="bg-slate-800 rounded-full h-2 w-24 mx-auto overflow-hidden">
+                                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style="width: 89%"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400 mt-1 block">89%</span>
+                                </td>
+                                <td class="py-3 text-right"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded font-medium">Analizado</span></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 font-medium">PSG vs Bayern Munich</td>
+                                <td class="py-3 text-cyan-400 font-semibold">Empate o Visitante</td>
+                                <td class="py-3 text-center">
+                                    <div class="bg-slate-800 rounded-full h-2 w-24 mx-auto overflow-hidden">
+                                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style="width: 74%"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400 mt-1 block">74%</span>
+                                </td>
+                                <td class="py-3 text-right"><span class="bg-yellow-500/10 text-yellow-400 text-xs px-2 py-0.5 rounded font-medium">Pendiente</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+        <div class="space-y-8">
+            <section class="bg-[#1C2541] rounded-2xl p-6 border border-slate-700/60 shadow-xl relative overflow-hidden">
+                <h2 class="text-xl font-bold flex items-center space-x-2 text-white mb-2">
+                    <i data-lucide="zap" class="text-amber-400 w-6 h-6 fill-amber-400"></i>
+                    <span>Planes Premium</span>
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">Recarga tu cuenta al instante mediante simulación segura de pasarela.</p>
+                <div class="space-y-4">
+                    <div class="bg-[#0B132B] border border-slate-700 hover:border-cyan-500/50 rounded-xl p-4 transition duration-300 group flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-blue-600/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">Básico</span>
+                                <h3 class="text-lg font-bold text-white mt-1">Plan Starter</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block">Precio</span>
+                                <span class="text-cyan-400 font-extrabold text-lg">$15.000 COP</span>
+                            </div>
+                        </div>
+                        <div class="my-4 flex items-center space-x-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/30">
+                            <i data-lucide="coins" class="w-5 h-5 text-cyan-400"></i>
+                            <span class="text-sm font-semibold text-slate-200">+50,000 Créditos</span>
+                        </div>
+                        <button onclick="buyPlan('Starter', 15000, 50000)" class="w-full bg-slate-800 group-hover:bg-cyan-500 group-hover:text-slate-900 text-slate-300 text-xs font-bold py-2 rounded-md transition duration-300 uppercase tracking-wide">
+                            Adquirir Plan
+                        </button>
+                    </div>
+                    <div class="bg-[#0B132B] border border-cyan-500/40 shadow-md shadow-cyan-500/5 rounded-xl p-4 transition duration-300 relative group flex flex-col justify-between">
+                        <div class="absolute -top-2.5 right-4 bg-cyan-500 text-slate-900 text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow">Más Vendido</div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-cyan-600/10 text-cyan-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">Avanzado</span>
+                                <h3 class="text-lg font-bold text-white mt-1">Plan Pro Analytics</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block">Precio</span>
+                                <span class="text-cyan-400 font-extrabold text-lg">$50.000 COP</span>
+                            </div>
+                        </div>
+                        <div class="my-4 flex items-center space-x-2 bg-cyan-950/30 p-2 rounded-lg border border-cyan-500/20">
+                            <i data-lucide="coins" class="w-5 h-5 text-amber-400"></i>
+                            <span class="text-sm font-semibold text-slate-200">+500,000 Créditos</span>
+                        </div>
+                        <button onclick="buyPlan('Pro Analytics', 50000, 500000)" class="w-full bg-cyan-600 text-slate-900 font-bold text-xs py-2 rounded-md transition duration-300 uppercase tracking-wide shadow-md shadow-cyan-500/20 hover:bg-cyan-500">
+                            Adquirir Plan
+                        </button>
+                    </div>
+                    <div class="bg-[#0B132B] border border-slate-700 hover:border-purple-500/50 rounded-xl p-4 transition duration-300 group flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-purple-600/10 text-purple-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">Inversionista</span>
+                                <h3 class="text-lg font-bold text-white mt-1">Plan Whale VIP</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block">Precio</span>
+                                <span class="text-cyan-400 font-extrabold text-lg">$100.000 COP</span>
+                            </div>
+                        </div>
+                        <div class="my-4 flex items-center space-x-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/30">
+                            <i data-lucide="coins" class="w-5 h-5 text-purple-400"></i>
+                            <span class="text-sm font-semibold text-slate-200">+1'000,000 Créditos</span>
+                        </div>
+                        <button onclick="buyPlan('Whale VIP', 100000, 1000000)" class="w-full bg-slate-800 group-hover:bg-purple-600 group-hover:text-white text-slate-300 text-xs font-bold py-2 rounded-md transition duration-300 uppercase tracking-wide">
+                            Adquirir Plan
+                        </button>
+                    </div>
+                </div>
+            </section>
+            <section class="bg-[#1C2541] rounded-2xl p-6 border border-slate-700/60 shadow-xl flex flex-col max-h-[320px]">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+                    <i data-lucide="history" class="w-4 h-4"></i>
+                    <span>Historial de Transacciones</span>
+                </h2>
+                <div id="transaction-logs" class="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-1 text-xs"></div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-[#0B132B] border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>&copy; 2026 BetAnalytics Pro Dashboard. Desarrollado con interfaz unificada en tonos azules para despliegues ágiles.</p>
+    </footer>
+
+    <script>
+        let userBalance = parseFloat(localStorage.getItem('bet_balance'));
+        if (isNaN(userBalance) || userBalance === null) {
+            userBalance = 50000;
+            localStorage.setItem('bet_balance', userBalance);
+        }
+
+        let logs = JSON.parse(localStorage.getItem('bet_logs')) || [
+            { type: 'sys', text: 'Bono inicial de registro otorgado: +50,000 créditos.', time: 'Ahora' }
+        ];
+
+        let internalHistory = ['Local', 'Visitante', 'Empate', 'Local'];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            updateBalanceUI();
+            renderLogs();
+            renderRecentResults();
+        });
+
+        function updateBalanceUI() {
+            document.getElementById('balance-display').innerText = userBalance.toLocaleString('en-US');
+            localStorage.setItem('bet_balance', userBalance);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        function setBetAmount(amount) {
+            document.getElementById('bet-amount').value = amount;
+        }
+
+        function multiplyBet(factor) {
+            const current = parseFloat(document.getElementById('bet-amount').value) || 0;
+            document.getElementById('bet-amount').value = current * factor;
+        }
+
+        function addLog(type, text) {
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            logs.unshift({ type, text, time });
+            if (logs.length > 20) logs.pop();
+            localStorage.setItem('bet_logs', JSON.stringify(logs));
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('transaction-logs');
+            container.innerHTML = '';
+            logs.forEach(log => {
+                container.innerHTML += `
+                    <div class="p-2.5 rounded-lg bg-[#0B132B]/60 border border-slate-700/40 flex justify-between items-center">
+                        <span class="font-medium text-slate-300">${log.text}</span>
+                        <span class="text-[10px] font-mono opacity-60 ml-2 whitespace-nowrap">${log.time}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderRecentResults() {
+            const container = document.getElementById('recent-results');
+            container.innerHTML = '';
+            internalHistory.slice(-6).reverse().forEach(res => {
+                let color = 'bg-blue-600/20 text-blue-400 border-blue-500/30';
+                if(res === 'Empate') color = 'bg-slate-700 text-slate-300 border-slate-600';
+                if(res === 'Visitante') color = 'bg-cyan-600/20 text-cyan-400 border-cyan-500/30';
+                container.innerHTML += `<span class="px-2.5 py-1 rounded text-xs font-bold border ${color}">${res}</span>`;
+            });
+        }
+
+        function placeBet() {
+            const amountInput = document.getElementById('bet-amount');
+            const betAmount = parseFloat(amountInput.value);
+            const betTarget = document.getElementById('bet-target').value;
+
+            if (isNaN(betAmount) || betAmount <= 0) {
+                showToast("Por favor, introduce un monto válido.");
+                return;
+            }
+
+            if (userBalance < betAmount) {
+                showToast("Créditos insuficientes. Adquiere un plan para continuar.");
+                return;
+            }
+
+            userBalance -= betAmount;
+            updateBalanceUI();
+
+            const statusDisplay = document.getElementById('game-status');
+            statusDisplay.innerText = "Procesando...";
+            statusDisplay.className = "text-2xl font-black mt-2 text-amber-400 animate-pulse";
+
+            setTimeout(() => {
+                const opciones = ['Local', 'Empate', 'Visitante'];
+                const cuotas = { 'Local': 1.85, 'Empate': 3.40, 'Visitante': 2.10 };
+                
+                const resultadoFinal = opciones[Math.floor(Math.random() * opciones.length)];
+                internalHistory.push(resultadoFinal);
+                renderRecentResults();
+
+                if (betTarget === resultadoFinal) {
+                    const premio = Math.floor(betAmount * cuotas[resultadoFinal]);
+                    userBalance += premio;
+                    statusDisplay.innerText = `¡GANASTE! (${resultadoFinal})`;
+                    statusDisplay.className = "text-2xl font-black mt-2 text-emerald-400";
+                    addLog('win', `Ganaste apuesta a ${betTarget}. Recibes +${premio.toLocaleString()} cr.`);
+                    showToast(`¡Ganaste ${premio.toLocaleString()} créditos!`);
+                } else {
+                    statusDisplay.innerText = `PERDISTE (${resultadoFinal})`;
+                    statusDisplay.className = "text-2xl font-black mt-2 text-rose-400";
+                    addLog('loss', `Perdiste apuesta de ${betAmount.toLocaleString()} cr. a ${betTarget}.`);
+                    showToast("Suerte para la próxima ronda.");
+                }
+                updateBalanceUI();
+            }, 1000);
+        }
+
+        function buyPlan(planName, price, creditsAwarded) {
+            const confirmacion = confirm(`¿Deseas simular el pago de $${price.toLocaleString('es-CO')} COP para adquirir el ${planName}?`);
+            if (confirmacion) {
+                userBalance += creditsAwarded;
+                updateBalanceUI();
+                addLog('buy', `Compraste ${planName}. Carga exitosa: +${creditsAwarded.toLocaleString()} cr.`);
+                showToast(`¡Plan ${planName} activado con éxito!`);
+            }
+        }
+    </script>
+</body>
+</html>
